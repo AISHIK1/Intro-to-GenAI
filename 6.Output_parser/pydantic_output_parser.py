@@ -38,3 +38,5 @@ result=chain.invoke({
 
 print(result)
 print(type(result))
+
+print(chain.get_graph().draw_ascii())
