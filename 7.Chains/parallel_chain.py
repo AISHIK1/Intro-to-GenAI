@@ -1,0 +1,68 @@
+from html import parser
+
+from anyio import TemporaryDirectory
+from langchain_huggingface import HuggingFaceEndpoint,ChatHuggingFace
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from  langchain_core.runnables import RunnableParallel
+from dotenv import load_dotenv
+
+load_dotenv()
+
+llm=HuggingFaceEndpoint(
+    repo_id='google/gemma-4-31B-it',
+    task='text-generation',
+    temperature=0.5)
+
+model=ChatHuggingFace(llm=llm)
+
+parser=StrOutputParser()
+prompt1=PromptTemplate(
+    template='Give me the details summary of the follow {text}',
+    input_variables=['text']
+)
+
+prompt2=PromptTemplate(
+    template='Give me 5 short questions on {text}',
+    input_variables=['text']
+)
+
+prompt3=PromptTemplate(
+    template='Merge the the notes and the quiz in a single document \n notes -> {notes} and quiz -> {quiz}',
+    input_variables=['notes','quiz']
+)
+
+p_chain=RunnableParallel({
+    'notes': prompt1 | model | parser,
+    'quiz': prompt2 | model | parser
+    })
+
+merge_chain= prompt3 | model | parser
+
+chain=p_chain | merge_chain
+
+text="""Support vector machines (SVMs) are a set of supervised learning methods used for classification, regression and outliers detection.
+
+The advantages of support vector machines are:
+
+Effective in high dimensional spaces.
+
+Still effective in cases where number of dimensions is greater than the number of samples.
+
+Uses a subset of training points in the decision function (called support vectors), so it is also memory efficient.
+
+Versatile: different Kernel functions can be specified for the decision function. Common kernels are provided, but it is also possible to specify custom kernels.
+
+The disadvantages of support vector machines include:
+
+If the number of features is much greater than the number of samples, avoid over-fitting in choosing Kernel functions and regularization term is crucial.
+
+SVMs do not directly provide probability estimates, these are calculated using an expensive five-fold cross-validation (see Scores and probabilities, below).
+
+The support vector machines in scikit-learn support both dense (numpy.ndarray and convertible to that by numpy.asarray) and sparse (any scipy.sparse) sample vectors as input. However, to use an SVM to make predictions for sparse data, it must have been fit on such data. For optimal performance, use C-ordered numpy.ndarray (dense) or scipy.sparse.csr_matrix (sparse) with dtype=float64."""
+
+result=chain.invoke({
+    'text': text
+})
+
+print(result)

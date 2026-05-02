@@ -30,7 +30,7 @@ template2=PromptTemplate(
 chain=template1 | model | parser | template2 | model | parser
 
 result=chain.invoke({
-    'topic':'dertivates'
+    'topic':'derivatives'
 })
 
 print(result)
